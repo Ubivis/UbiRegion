@@ -1,9 +1,16 @@
 package com.ubivismedia.ubiregions;
 
+import com.fastasyncworldedit.core.FaweAPI;
+import com.sk89q.worldedit.bukkit.BukkitAdapter;
+import com.sk89q.worldedit.extent.clipboard.Clipboard;
+import com.sk89q.worldedit.extent.clipboard.io.ClipboardFormat;
+import com.sk89q.worldedit.extent.clipboard.io.ClipboardReader;
+import com.sk89q.worldedit.function.operation.Operations;
+import com.sk89q.worldedit.session.ClipboardHolder;
+import com.sk89q.worldedit.world.World;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.Material;
-import org.bukkit.World;
 import org.bukkit.block.Block;
 import org.bukkit.entity.EntityType;
 import org.bukkit.entity.Pillager;
@@ -11,9 +18,9 @@ import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
 
 import java.io.File;
+import java.io.FileInputStream;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
-import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.Random;
 
@@ -25,14 +32,14 @@ public class BuildingPlacer {
         this.databaseManager = databaseManager;
     }
 
-    public void placeBuilding(int regionId, World world, String biomeName, int x, int z) {
+    public void placeBuilding(int regionId, org.bukkit.World world, String biomeName, int x, int z) {
         File schematicDir = new File("plugins/UbiRegions/resources/buildings/" + biomeName);
         if (!schematicDir.exists() || !schematicDir.isDirectory()) {
             Bukkit.getLogger().warning("No schematics found for biome: " + biomeName);
             return;
         }
 
-        File[] files = schematicDir.listFiles((dir, name) -> name.endsWith(".schematic"));
+        File[] files = schematicDir.listFiles((dir, name) -> name.endsWith(".schem"));
         if (files == null || files.length == 0) {
             Bukkit.getLogger().warning("No schematic files available for biome: " + biomeName);
             return;
@@ -50,7 +57,7 @@ public class BuildingPlacer {
         spawnEnemiesAndLoot(location);
     }
 
-    private Location findSuitableLocation(World world, int x, int z) {
+    private Location findSuitableLocation(org.bukkit.World world, int x, int z) {
         for (int y = world.getMaxHeight(); y > 50; y--) {
             Block block = world.getBlockAt(x, y, z);
             if (block.getType().isSolid()) {
@@ -61,8 +68,28 @@ public class BuildingPlacer {
     }
 
     private void loadSchematic(File schematic, Location location) {
-        // Placeholder for schematic loading logic
-        Bukkit.getLogger().info("Loaded schematic " + schematic.getName() + " at " + location);
+        try (FileInputStream fis = new FileInputStream(schematic)) {
+            ClipboardFormat format = ClipboardFormat.findByFile(schematic);
+            if (format == null) {
+                Bukkit.getLogger().warning("Invalid schematic format: " + schematic.getName());
+                return;
+            }
+            
+            ClipboardReader reader = format.getReader(fis);
+            Clipboard clipboard = reader.read();
+            World weWorld = BukkitAdapter.adapt(location.getWorld());
+            
+            com.sk89q.worldedit.EditSession editSession = FaweAPI.getEditSessionBuilder(weWorld).build();
+            Operations.complete(new ClipboardHolder(clipboard).createPaste(editSession)
+                    .to(BukkitAdapter.asBlockVector(location))
+                    .ignoreAirBlocks(true)
+                    .build());
+            editSession.flushQueue();
+
+            Bukkit.getLogger().info("Loaded schematic " + schematic.getName() + " at " + location);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
     }
 
     private void saveCastleToDatabase(int regionId, Location location) {
