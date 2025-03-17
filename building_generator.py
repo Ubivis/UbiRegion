@@ -15,6 +15,19 @@ def get_materials_for_biome(biome):
     }
     return biome_materials.get(biome.upper(), biome_materials["PLAINS"])
 
+def get_furnishings_for_room(room_type):
+    """Returns a list of furniture items based on room type."""
+    room_furnishings = {
+        "bedroom": ["minecraft:bed", "minecraft:chest", "minecraft:carpet", "minecraft:painting"],
+        "storage": ["minecraft:barrel", "minecraft:chest", "minecraft:barrel"],
+        "dining_hall": ["minecraft:oak_table", "minecraft:oak_chair", "minecraft:cake", "minecraft:painting"],
+        "library": ["minecraft:bookshelf", "minecraft:lectern", "minecraft:candle", "minecraft:painting"],
+        "armory": ["minecraft:armor_stand", "minecraft:anvil", "minecraft:smithing_table"],
+        "secret_room": ["minecraft:chest", "minecraft:redstone_torch", "minecraft:lever"],
+    }
+    return room_furnishings.get(room_type, [])
+
+
 def create_structure_schematic(structure_type="TOWER", biome="PLAINS", size=10, floors=3, rooms=4):
     """Generates a biome-specific tower or castle schematic with decorations, banners, and lighting."""
     filename = f"{biome.lower()}_{structure_type.lower()}.schem"
@@ -109,6 +122,7 @@ def create_castle_schematic(biome, size, floors, rooms, filename):
     height = floors * 4
     structure = np.full((size, height, size), "minecraft:air")
     room_types = ["bedroom", "storage", "dining_hall", "library", "armory"]
+    has_secret_room = random.choice([True, False])
     
     # Generate walls
     for y in range(height):
@@ -127,6 +141,12 @@ def create_castle_schematic(biome, size, floors, rooms, filename):
     # Assign rooms randomly per floor
     for floor in range(floors):
         assigned_rooms = random.sample(room_types, min(len(room_types), rooms))
+        if has_secret_room and floor == floors - 1:
+            assigned_rooms.append("secret_room")        
+        for room in assigned_rooms:
+            furnishings = get_furnishings_for_room(room)
+            if "secret_room" in assigned_rooms:
+                print("  - Secret room added with hidden lever and chest!")
     
     # Add doors and gates
     structure[size // 2, 0, 0] = materials["gate"]
