@@ -34,12 +34,12 @@ public class BuildingPlacer {
     private static final Map<String, List<ItemStack>> biomeLoot = new HashMap<>();
 
     static {
-        biomeLoot.put("DESERT", Arrays.asList(new ItemStack(Material.GOLD_INGOT, 3), new ItemStack(Material.SANDSTONE, 10), new ItemStack(Material.EMERALD, 1)));
-        biomeLoot.put("PLAINS", Arrays.asList(new ItemStack(Material.WHEAT, 10), new ItemStack(Material.IRON_HOE, 1), new ItemStack(Material.APPLE, 5)));
-        biomeLoot.put("TAIGA", Arrays.asList(new ItemStack(Material.SPRUCE_LOG, 10), new ItemStack(Material.LEATHER_BOOTS, 1), new ItemStack(Material.BONE, 5)));
-        biomeLoot.put("JUNGLE", Arrays.asList(new ItemStack(Material.COCOA_BEANS, 5), new ItemStack(Material.IRON_SWORD, 1), new ItemStack(Material.PARROT_SPAWN_EGG, 1)));
-        biomeLoot.put("SAVANNA", Arrays.asList(new ItemStack(Material.ACACIA_LOG, 10), new ItemStack(Material.GOLDEN_APPLE, 1), new ItemStack(Material.LEATHER, 5)));
-        biomeLoot.put("MOUNTAINS", Arrays.asList(new ItemStack(Material.IRON_PICKAXE, 1), new ItemStack(Material.COBBLESTONE, 20), new ItemStack(Material.LAPIS_LAZULI, 3)));
+        biomeLoot.put("DESERT", Arrays.asList(new ItemStack(Material.GOLD_INGOT, 3), new ItemStack(Material.SANDSTONE, 10), new ItemStack(Material.EMERALD, 1), new ItemStack(Material.TNT, 1)));
+        biomeLoot.put("PLAINS", Arrays.asList(new ItemStack(Material.WHEAT, 10), new ItemStack(Material.IRON_HOE, 1), new ItemStack(Material.APPLE, 5), new ItemStack(Material.HAY_BLOCK, 2)));
+        biomeLoot.put("TAIGA", Arrays.asList(new ItemStack(Material.SPRUCE_LOG, 10), new ItemStack(Material.LEATHER_BOOTS, 1), new ItemStack(Material.BONE, 5), new ItemStack(Material.ARROW, 10)));
+        biomeLoot.put("JUNGLE", Arrays.asList(new ItemStack(Material.COCOA_BEANS, 5), new ItemStack(Material.IRON_SWORD, 1), new ItemStack(Material.PARROT_SPAWN_EGG, 1), new ItemStack(Material.BAMBOO, 10)));
+        biomeLoot.put("SAVANNA", Arrays.asList(new ItemStack(Material.ACACIA_LOG, 10), new ItemStack(Material.GOLDEN_APPLE, 1), new ItemStack(Material.LEATHER, 5), new ItemStack(Material.BOW, 1)));
+        biomeLoot.put("MOUNTAINS", Arrays.asList(new ItemStack(Material.IRON_PICKAXE, 1), new ItemStack(Material.COBBLESTONE, 20), new ItemStack(Material.LAPIS_LAZULI, 3), new ItemStack(Material.EMERALD, 2)));
     }
     
     public BuildingPlacer(DatabaseManager databaseManager) {
@@ -60,7 +60,7 @@ public class BuildingPlacer {
         }
 
         File chosenSchematic = files[random.nextInt(files.length)];
-        Location location = findFlatArea(world, x, z);
+        Location location = findAdjustedFlatArea(world, x, z);
         if (location == null) {
             Bukkit.getLogger().warning("No valid flat location found in region " + regionId);
             return;
@@ -129,7 +129,8 @@ public class BuildingPlacer {
     }
 
     private void spawnEnemiesAndLoot(Location location, File schematic, String biomeName) {
-        for (int i = 0; i < 3; i++) {
+        int numPillagers = random.nextInt(3) + 2; // Spawne 2 bis 4 Pillager
+        for (int i = 0; i < numPillagers; i++) {
             Pillager pillager = (Pillager) location.getWorld().spawnEntity(location, EntityType.PILLAGER);
             pillager.setCustomName("Raider");
         }
@@ -144,11 +145,28 @@ public class BuildingPlacer {
                 Inventory chestInventory = ((Chest) state).getInventory();
                 List<ItemStack> loot = biomeLoot.getOrDefault(biomeName.toUpperCase(), Arrays.asList(new ItemStack(Material.IRON_INGOT, 3), new ItemStack(Material.BREAD, 5)));
                 
-                for (ItemStack item : loot) {
-                    chestInventory.addItem(item);
+                Collections.shuffle(loot);
+                for (int i = 0; i < Math.min(3, loot.size()); i++) {
+                    chestInventory.addItem(loot.get(i));
                 }
             }
         }
+    }
+
+        private Location findAdjustedFlatArea(org.bukkit.World world, int x, int z) {
+        int searchRadius = 5;
+        int baseY = world.getHighestBlockYAt(x, z);
+        
+        for (int dx = -searchRadius; dx <= searchRadius; dx++) {
+            for (int dz = -searchRadius; dz <= searchRadius; dz++) {
+                int y = world.getHighestBlockYAt(x + dx, z + dz);
+                if (Math.abs(y - baseY) > 3) {
+                    baseY = Math.min(baseY, y); // Terrain leicht anpassen
+                }
+            }
+        }
+        
+        return new Location(world, x, baseY + 1, z);
     }
 
     private Location findHighestWalkableBlock(Location location) {
