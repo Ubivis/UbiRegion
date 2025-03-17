@@ -72,7 +72,7 @@ public class BuildingPlacer {
             executorService.execute(() -> {
                 spawnEnemiesAndLoot(location, biomeName);
                 placeSecretRoom(location);
-                dungeonPlacer.placeDungeon(world, biomeName, location);
+                dungeonPlacer.placeDungeon(world, biomeName, location, regionId);
             });
         });
     }
