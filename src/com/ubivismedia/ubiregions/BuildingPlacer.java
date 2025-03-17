@@ -13,9 +13,7 @@ import com.sk89q.worldedit.world.World;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.Material;
-import org.bukkit.block.Block;
-import org.bukkit.block.BlockState;
-import org.bukkit.block.Chest;
+import org.bukkit.block.*;
 import org.bukkit.entity.EntityType;
 import org.bukkit.entity.Pillager;
 import org.bukkit.inventory.Inventory;
@@ -71,21 +69,46 @@ public class BuildingPlacer {
         loadSchematic(chosenSchematic, location);
         saveCastleToDatabase(regionId, location);
         spawnEnemiesAndLoot(location, chosenSchematic, biomeName);
+        placeSecretRoom(location);
         dungeonPlacer.placeDungeon(world, biomeName, location);
     }
 
-    private Location findFlatArea(org.bukkit.World world, int x, int z) {
+    private Location findAdjustedFlatArea(org.bukkit.World world, int x, int z) {
         int searchRadius = 5;
         int baseY = world.getHighestBlockYAt(x, z);
         
         for (int dx = -searchRadius; dx <= searchRadius; dx++) {
             for (int dz = -searchRadius; dz <= searchRadius; dz++) {
                 int y = world.getHighestBlockYAt(x + dx, z + dz);
-                if (Math.abs(y - baseY) > 2) return null;
+                if (Math.abs(y - baseY) > 3) {
+                    baseY = Math.min(baseY, y);
+                }
             }
         }
         
         return new Location(world, x, baseY + 1, z);
+    }
+    
+    private void placeSecretRoom(Location location) {
+        if (random.nextBoolean()) {
+            Location secretRoomLoc = location.clone().add(random.nextInt(5) - 2, -1, random.nextInt(5) - 2);
+            Block secretBlock = secretRoomLoc.getBlock();
+            secretBlock.setType(Material.STONE_BRICKS);
+            Bukkit.getLogger().info("Secret room created at: " + secretRoomLoc);
+
+            Location chestLoc = secretRoomLoc.clone().add(1, 0, 0);
+            chestLoc.getBlock().setType(Material.CHEST);
+            BlockState state = chestLoc.getBlock().getState();
+            if (state instanceof Chest) {
+                Inventory chestInventory = ((Chest) state).getInventory();
+                chestInventory.addItem(new ItemStack(Material.DIAMOND, 1));
+                chestInventory.addItem(new ItemStack(Material.REDSTONE_TORCH, 1));
+            }
+
+            Location redstoneDoorLoc = secretRoomLoc.clone().add(0, 0, -1);
+            redstoneDoorLoc.getBlock().setType(Material.PISTON);
+            Bukkit.getLogger().info("Hidden redstone door placed at: " + redstoneDoorLoc);
+        }
     }
 
     private void loadSchematic(File schematic, Location location) {
