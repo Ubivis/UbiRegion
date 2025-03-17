@@ -27,6 +27,20 @@ public class DatabaseManager {
                     + "chunk_x INTEGER NOT NULL,"
                     + "chunk_z INTEGER NOT NULL,"
                     + "FOREIGN KEY (region_id) REFERENCES regions(id) ON DELETE CASCADE);");
+            stmt.executeUpdate("CREATE TABLE IF NOT EXISTS castles ("
+                    + "id INTEGER PRIMARY KEY AUTOINCREMENT,"
+                    + "region_id INTEGER NOT NULL,"
+                    + "x INTEGER NOT NULL,"
+                    + "y INTEGER NOT NULL,"
+                    + "z INTEGER NOT NULL,"
+                    + "FOREIGN KEY (region_id) REFERENCES regions(id) ON DELETE CASCADE);");
+            stmt.executeUpdate("CREATE TABLE IF NOT EXISTS dungeons ("
+                    + "id INTEGER PRIMARY KEY AUTOINCREMENT,"
+                    + "region_id INTEGER NOT NULL,"
+                    + "entrance_x INTEGER NOT NULL,"
+                    + "entrance_y INTEGER NOT NULL,"
+                    + "entrance_z INTEGER NOT NULL,"
+                    + "FOREIGN KEY (region_id) REFERENCES regions(id) ON DELETE CASCADE);");
             stmt.close();
         } catch (SQLException e) {
             e.printStackTrace();
