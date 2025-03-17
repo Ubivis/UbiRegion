@@ -27,7 +27,7 @@ public class DungeonPlacer {
         this.executorService = executorService;
     }
     
-    public void placeDungeon(World world, String biomeName, Location castleLocation) {
+    public void placeDungeon(World world, String biomeName, Location castleLocation, int regionId) {
         Location entrance = findSuitableLocation(world);
         if (entrance == null) {
             Bukkit.getLogger().warning("No suitable dungeon location found in biome: " + biomeName);
@@ -39,7 +39,7 @@ public class DungeonPlacer {
         bossRoomPlaced = false;
         generateDungeon(entrance.clone().add(0, -5, 0), dungeonDepth, biomeName);
         placeDungeonMapInCastle(world, castleLocation, entrance);
-        saveDungeonToDatabase(entrance);
+        saveDungeonToDatabase(regionId, entrance);
     }
 
     private int determineDungeonSize(String biomeName) {
