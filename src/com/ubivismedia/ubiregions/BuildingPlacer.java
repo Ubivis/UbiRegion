@@ -26,12 +26,22 @@ import java.io.FileInputStream;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
-import java.util.Random;
+import java.util.*;
 
 public class BuildingPlacer {
     private final DatabaseManager databaseManager;
     private final Random random = new Random();
+    private static final Map<String, List<ItemStack>> biomeLoot = new HashMap<>();
 
+    static {
+        biomeLoot.put("DESERT", Arrays.asList(new ItemStack(Material.GOLD_INGOT, 3), new ItemStack(Material.SANDSTONE, 10), new ItemStack(Material.EMERALD, 1)));
+        biomeLoot.put("PLAINS", Arrays.asList(new ItemStack(Material.WHEAT, 10), new ItemStack(Material.IRON_HOE, 1), new ItemStack(Material.APPLE, 5)));
+        biomeLoot.put("TAIGA", Arrays.asList(new ItemStack(Material.SPRUCE_LOG, 10), new ItemStack(Material.LEATHER_BOOTS, 1), new ItemStack(Material.BONE, 5)));
+        biomeLoot.put("JUNGLE", Arrays.asList(new ItemStack(Material.COCOA_BEANS, 5), new ItemStack(Material.IRON_SWORD, 1), new ItemStack(Material.PARROT_SPAWN_EGG, 1)));
+        biomeLoot.put("SAVANNA", Arrays.asList(new ItemStack(Material.ACACIA_LOG, 10), new ItemStack(Material.GOLDEN_APPLE, 1), new ItemStack(Material.LEATHER, 5)));
+        biomeLoot.put("MOUNTAINS", Arrays.asList(new ItemStack(Material.IRON_PICKAXE, 1), new ItemStack(Material.COBBLESTONE, 20), new ItemStack(Material.LAPIS_LAZULI, 3)));
+    }
+    
     public BuildingPlacer(DatabaseManager databaseManager) {
         this.databaseManager = databaseManager;
     }
@@ -58,7 +68,7 @@ public class BuildingPlacer {
 
         loadSchematic(chosenSchematic, location);
         saveCastleToDatabase(regionId, location);
-        spawnEnemiesAndLoot(location, chosenSchematic);
+        spawnEnemiesAndLoot(location, chosenSchematic, biomeName);
     }
 
     private Location findFlatArea(org.bukkit.World world, int x, int z) {
@@ -118,7 +128,7 @@ public class BuildingPlacer {
         }
     }
 
-    private void spawnEnemiesAndLoot(Location location, File schematic) {
+    private void spawnEnemiesAndLoot(Location location, File schematic, String biomeName) {
         for (int i = 0; i < 3; i++) {
             Pillager pillager = (Pillager) location.getWorld().spawnEntity(location, EntityType.PILLAGER);
             pillager.setCustomName("Raider");
@@ -132,9 +142,11 @@ public class BuildingPlacer {
             BlockState state = chestBlock.getState();
             if (state instanceof Chest) {
                 Inventory chestInventory = ((Chest) state).getInventory();
-                chestInventory.addItem(new ItemStack(Material.DIAMOND, 2));
-                chestInventory.addItem(new ItemStack(Material.GOLD_INGOT, 4));
-                chestInventory.addItem(new ItemStack(Material.IRON_SWORD, 1));
+                List<ItemStack> loot = biomeLoot.getOrDefault(biomeName.toUpperCase(), Arrays.asList(new ItemStack(Material.IRON_INGOT, 3), new ItemStack(Material.BREAD, 5)));
+                
+                for (ItemStack item : loot) {
+                    chestInventory.addItem(item);
+                }
             }
         }
     }
