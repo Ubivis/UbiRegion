@@ -27,7 +27,7 @@ public class DungeonPlacer {
 
         int dungeonDepth = determineDungeonSize(biomeName);
         generateEntrance(entrance);
-        generateDungeon(entrance.clone().add(0, -5, 0), dungeonDepth);
+        generateDungeon(entrance.clone().add(0, -5, 0), dungeonDepth, biomeName);
     }
 
     private int determineDungeonSize(String biomeName) {
@@ -138,9 +138,31 @@ public class DungeonPlacer {
         Bukkit.getLogger().info("Placed loot chest at: " + location);
     }
 
-    private void spawnEnemies(Location location, int depth) {
-        int numEnemies = random.nextInt(3) + 2;
-        EntityType[] enemies = depth > 5 ? new EntityType[]{EntityType.PILLAGER, EntityType.VINDICATOR, EntityType.EVOKER} : new EntityType[]{EntityType.ZOMBIE, EntityType.SKELETON};
+    private void spawnEnemies(Location location, int depth, String biomeName) {
+        int numEnemies;
+        EntityType[] enemies;
+        
+        switch (biomeName.toUpperCase()) {
+            case "MOUNTAINS":
+            case "HILLS":
+                numEnemies = random.nextInt(5) + 6; // 6 bis 10 Gegner
+                enemies = depth > 10 ? new EntityType[]{EntityType.VINDICATOR, EntityType.EVOKER} : new EntityType[]{EntityType.PILLAGER, EntityType.ZOMBIE};
+                break;
+            case "JUNGLE":
+            case "TAIGA":
+                numEnemies = random.nextInt(4) + 5; // 5 bis 8 Gegner
+                enemies = depth > 8 ? new EntityType[]{EntityType.PILLAGER, EntityType.SKELETON} : new EntityType[]{EntityType.ZOMBIE, EntityType.SPIDER};
+                break;
+            case "DESERT":
+            case "PLAINS":
+                numEnemies = random.nextInt(3) + 3; // 3 bis 5 Gegner
+                enemies = depth > 6 ? new EntityType[]{EntityType.HUSK, EntityType.SKELETON} : new EntityType[]{EntityType.ZOMBIE, EntityType.SPIDER};
+                break;
+            default:
+                numEnemies = random.nextInt(3) + 2;
+                enemies = new EntityType[]{EntityType.ZOMBIE, EntityType.SKELETON};
+        }
+        
         for (int i = 0; i < numEnemies; i++) {
             EntityType enemyType = enemies[random.nextInt(enemies.length)];
             location.getWorld().spawnEntity(location, enemyType).setCustomName("Dungeon Guard");
