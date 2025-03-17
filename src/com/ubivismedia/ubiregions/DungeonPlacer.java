@@ -13,6 +13,7 @@ import java.util.Random;
 
 public class DungeonPlacer {
     private final Random random = new Random();
+    private boolean bossRoomPlaced = false;
 
     public void placeDungeon(World world, String biomeName) {
         Location entrance = findSuitableLocation(world);
@@ -23,6 +24,7 @@ public class DungeonPlacer {
 
         int dungeonDepth = determineDungeonSize(biomeName);
         generateEntrance(entrance);
+        bossRoomPlaced = false;
         generateDungeon(entrance.clone().add(0, -5, 0), dungeonDepth, biomeName);
     }
 
@@ -125,13 +127,20 @@ public class DungeonPlacer {
         spawnEnemies(startLocation, depth);
     }
 
-    private void placeLootChest(Location location) {
+    private void placeLootChest(Location location, boolean rareLoot) {
         location.getBlock().setType(Material.CHEST);
         Inventory chestInventory = ((org.bukkit.block.Chest) location.getBlock().getState()).getInventory();
-        chestInventory.addItem(new ItemStack(Material.DIAMOND, 1));
-        chestInventory.addItem(new ItemStack(Material.GOLD_INGOT, 5));
-        chestInventory.addItem(new ItemStack(Material.IRON_SWORD, 1));
-        Bukkit.getLogger().info("Placed loot chest at: " + location);
+        
+        if (rareLoot) {
+            chestInventory.addItem(new ItemStack(Material.DIAMOND, 2));
+            chestInventory.addItem(new ItemStack(Material.GOLDEN_APPLE, 1));
+            chestInventory.addItem(new ItemStack(Material.ENCHANTED_BOOK, 1));
+        } else {
+            chestInventory.addItem(new ItemStack(Material.IRON_INGOT, 5));
+            chestInventory.addItem(new ItemStack(Material.BREAD, 3));
+            chestInventory.addItem(new ItemStack(Material.ARROW, 10));
+        }
+        Bukkit.getLogger().info("Placed " + (rareLoot ? "RARE" : "COMMON") + " loot chest at: " + location);
     }
 
     private void spawnEnemies(Location location, int depth, String biomeName) {
@@ -185,22 +194,6 @@ public class DungeonPlacer {
         }
     }
 
-    private void placeLootChest(Location location, boolean rareLoot) {
-        location.getBlock().setType(Material.CHEST);
-        Inventory chestInventory = ((org.bukkit.block.Chest) location.getBlock().getState()).getInventory();
-        
-        if (rareLoot) {
-            chestInventory.addItem(new ItemStack(Material.DIAMOND, 2));
-            chestInventory.addItem(new ItemStack(Material.GOLDEN_APPLE, 1));
-            chestInventory.addItem(new ItemStack(Material.ENCHANTED_BOOK, 1));
-        } else {
-            chestInventory.addItem(new ItemStack(Material.IRON_INGOT, 5));
-            chestInventory.addItem(new ItemStack(Material.BREAD, 3));
-            chestInventory.addItem(new ItemStack(Material.ARROW, 10));
-        }
-        Bukkit.getLogger().info("Placed " + (rareLoot ? "RARE" : "COMMON") + " loot chest at: " + location);
-    }    
-
     private void placeHiddenRoom(Location location) {
         World world = location.getWorld();
         if (random.nextInt(10) > 7) {
@@ -213,8 +206,29 @@ public class DungeonPlacer {
             }
             world.getBlockAt(location.clone().add(0, 0, -3)).setType(Material.PISTON);
             placeLootChest(location.clone().add(1, 0, 0), true);
-            Bukkit.getLogger().info("Hidden room created at: " + location);
+            Bukkit.getLogger().info("Hidden room with loot created at: " + location);
         }
+    }
+
+    private void placeBossRoom(Location location) {
+        if (bossRoomPlaced) return;
+        bossRoomPlaced = true;
+        World world = location.getWorld();
+
+        for (int dx = -4; dx <= 4; dx++) {
+            for (int dz = -4; dz <= 4; dz++) {
+                for (int dy = -3; dy <= 3; dy++) {
+                    world.getBlockAt(location.clone().add(dx, dy, dz)).setType(Material.STONE_BRICKS);
+                }
+            }
+        }
+
+        world.getBlockAt(location).setType(Material.BEACON);
+        placeLootChest(location.clone().add(2, 0, 2), true);
+        
+        Entity boss = world.spawnEntity(location.clone().add(0, 1, 0), EntityType.WITHER);
+        boss.setCustomName("Dungeon Boss");
+        Bukkit.getLogger().info("Boss room created at: " + location);
     }
     
     private void generateDungeon(Location startLocation, int depth, String biomeName) {
@@ -227,6 +241,10 @@ public class DungeonPlacer {
                     world.getBlockAt(startLocation.clone().add(dx, dy, dz)).setType(Material.STONE);
                 }
             }
+        }
+
+        if (!bossRoomPlaced && depth <= 3) {
+            placeBossRoom(startLocation.clone().add(6, 0, 6));
         }
         
         placeTraps(startLocation.clone().add(0, -1, 0));
