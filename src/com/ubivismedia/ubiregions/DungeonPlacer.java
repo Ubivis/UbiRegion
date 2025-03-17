@@ -9,12 +9,24 @@ import org.bukkit.block.BlockFace;
 import org.bukkit.entity.*;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
+
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.SQLException;
 import java.util.Random;
+import java.util.concurrent.ExecutorService;
 
 public class DungeonPlacer {
+    private final DatabaseManager databaseManager;
+    private final ExecutorService executorService;
     private final Random random = new Random();
     private boolean bossRoomPlaced = false;
-
+    
+    public DungeonPlacer(DatabaseManager databaseManager, ExecutorService executorService) {
+        this.databaseManager = databaseManager;
+        this.executorService = executorService;
+    }
+    
     public void placeDungeon(World world, String biomeName, Location castleLocation) {
         Location entrance = findSuitableLocation(world);
         if (entrance == null) {
@@ -27,6 +39,7 @@ public class DungeonPlacer {
         bossRoomPlaced = false;
         generateDungeon(entrance.clone().add(0, -5, 0), dungeonDepth, biomeName);
         placeDungeonMapInCastle(world, castleLocation, entrance);
+        saveDungeonToDatabase(entrance);
     }
 
     private int determineDungeonSize(String biomeName) {
@@ -288,5 +301,20 @@ public class DungeonPlacer {
         if (random.nextBoolean()) {
             generateDungeon(startLocation.clone().add(0, 0, -5), depth - 1, biomeName);
         }
+    }
+
+    private void saveDungeonToDatabase(Location location) {
+        executorService.execute(() -> {
+            try (Connection conn = databaseManager.getConnection();
+                 PreparedStatement stmt = conn.prepareStatement(
+                         "INSERT INTO dungeons (x, y, z) VALUES (?, ?, ?)")) {
+                stmt.setInt(1, location.getBlockX());
+                stmt.setInt(2, location.getBlockY());
+                stmt.setInt(3, location.getBlockZ());
+                stmt.executeUpdate();
+            } catch (SQLException e) {
+                e.printStackTrace();
+            }
+        });
     }
 }
