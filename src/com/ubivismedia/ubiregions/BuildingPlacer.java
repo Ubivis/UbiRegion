@@ -48,9 +48,9 @@ public class BuildingPlacer {
         }
 
         File chosenSchematic = files[random.nextInt(files.length)];
-        Location location = findSuitableLocation(world, x, z);
+        Location location = findFlatArea(world, x, z);
         if (location == null) {
-            Bukkit.getLogger().warning("No valid location found in region " + regionId);
+            Bukkit.getLogger().warning("No valid flat location found in region " + regionId);
             return;
         }
 
@@ -59,14 +59,18 @@ public class BuildingPlacer {
         spawnEnemiesAndLoot(location);
     }
 
-    private Location findSuitableLocation(org.bukkit.World world, int x, int z) {
-        for (int y = world.getMaxHeight(); y > 50; y--) {
-            Block block = world.getBlockAt(x, y, z);
-            if (block.getType().isSolid()) {
-                return new Location(world, x, y + 1, z);
+    private Location findFlatArea(org.bukkit.World world, int x, int z) {
+        int searchRadius = 5;
+        int baseY = world.getHighestBlockYAt(x, z);
+        
+        for (int dx = -searchRadius; dx <= searchRadius; dx++) {
+            for (int dz = -searchRadius; dz <= searchRadius; dz++) {
+                int y = world.getHighestBlockYAt(x + dx, z + dz);
+                if (Math.abs(y - baseY) > 2) return null;
             }
         }
-        return null;
+        
+        return new Location(world, x, baseY + 1, z);
     }
 
     private void loadSchematic(File schematic, Location location) {
@@ -83,7 +87,6 @@ public class BuildingPlacer {
             
             com.sk89q.worldedit.EditSession editSession = FaweAPI.getEditSessionBuilder(weWorld).build();
             
-            // Zufällige Rotation um 0°, 90°, 180° oder 270°
             int rotationAngle = random.nextInt(4) * 90;
             Transform transform = new AffineTransform().rotateY(rotationAngle);
             
