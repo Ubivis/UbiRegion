@@ -2,31 +2,41 @@ package com.ubivismedia.ubiregions;
 
 import org.bukkit.Bukkit;
 import org.bukkit.plugin.java.JavaPlugin;
+
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 public class UbiRegions extends JavaPlugin {
-
     private static UbiRegions instance;
-    private ExecutorService executor;
+    private ExecutorService executorService;
     private DatabaseManager databaseManager;
-    private WorldManager worldManager;
+    private BuildingPlacer buildingPlacer;
+    private DungeonPlacer dungeonPlacer;
 
     @Override
     public void onEnable() {
         instance = this;
-        executor = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors());
+
+        // Create a thread pool with a limited number of threads
+        executorService = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors());
+
+        // Initialize database and game components
         databaseManager = new DatabaseManager();
-        worldManager = new WorldManager(databaseManager);
-        
-        Bukkit.getPluginManager().registerEvents(new ChunkListener(worldManager), this);
+        dungeonPlacer = new DungeonPlacer(databaseManager, this);
+        buildingPlacer = new BuildingPlacer(databaseManager, dungeonPlacer, executorService);
+
+        // Register events (if needed)
+        Bukkit.getPluginManager().registerEvents(new ChunkListener(buildingPlacer), this);
+
         getLogger().info("UbiRegions has been enabled!");
     }
 
     @Override
     public void onDisable() {
-        databaseManager.shutdown();
-        executor.shutdown();
+        // Shutdown the thread pool to prevent memory leaks
+        if (executorService != null) {
+            executorService.shutdown();
+        }
         getLogger().info("UbiRegions has been disabled!");
     }
 
@@ -34,7 +44,11 @@ public class UbiRegions extends JavaPlugin {
         return instance;
     }
 
-    public ExecutorService getExecutor() {
-        return executor;
+    public ExecutorService getExecutorService() {
+        return executorService;
+    }
+
+    public DatabaseManager getDatabaseManager() {
+        return databaseManager;
     }
 }
