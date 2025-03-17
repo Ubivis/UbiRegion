@@ -22,7 +22,7 @@ public class DungeonPlacer {
         }
 
         generateEntrance(entrance);
-        generateDungeon(entrance.clone().add(0, -5, 0));
+        generateDungeon(entrance.clone().add(0, -5, 0), 10);
     }
 
     private Location findSuitableLocation(World world) {
@@ -76,23 +76,39 @@ public class DungeonPlacer {
         Bukkit.getLogger().info("Dungeon entrance created at: " + location);
     }
 
-    private void generateDungeon(Location startLocation) {
-        generateRooms(startLocation, 5);
-        placeLootChest(startLocation.clone().add(0, -10, 0));
-        spawnEnemies(startLocation.clone().add(0, -5, 0));
-    }
-
-    private void generateRooms(Location location, int depth) {
+    private void generateDungeon(Location startLocation, int depth) {
         if (depth <= 0) return;
-        World world = location.getWorld();
+        World world = startLocation.getWorld();
+        
         for (int dx = -3; dx <= 3; dx++) {
             for (int dz = -3; dz <= 3; dz++) {
                 for (int dy = -2; dy <= 2; dy++) {
-                    world.getBlockAt(location.clone().add(dx, dy, dz)).setType(Material.STONE);
+                    world.getBlockAt(startLocation.clone().add(dx, dy, dz)).setType(Material.STONE);
                 }
             }
         }
-        generateRooms(location.clone().add(0, -5, 0), depth - 1);
+        
+        if (random.nextBoolean()) {
+            generateDungeon(startLocation.clone().add(0, -5, 0), depth - 1);
+        }
+        if (random.nextBoolean()) {
+            generateDungeon(startLocation.clone().add(5, 0, 0), depth - 1);
+        }
+        if (random.nextBoolean()) {
+            generateDungeon(startLocation.clone().add(-5, 0, 0), depth - 1);
+        }
+        if (random.nextBoolean()) {
+            generateDungeon(startLocation.clone().add(0, 0, 5), depth - 1);
+        }
+        if (random.nextBoolean()) {
+            generateDungeon(startLocation.clone().add(0, 0, -5), depth - 1);
+        }
+        if (random.nextBoolean()) {
+            generateDungeon(startLocation.clone().add(0, 5, 0), depth - 1);
+        }
+        
+        placeLootChest(startLocation.clone().add(0, -depth, 0));
+        spawnEnemies(startLocation);
     }
 
     private void placeLootChest(Location location) {
@@ -105,10 +121,11 @@ public class DungeonPlacer {
     }
 
     private void spawnEnemies(Location location) {
-        for (int i = 0; i < 3; i++) {
+        int numEnemies = random.nextInt(3) + 2;
+        for (int i = 0; i < numEnemies; i++) {
             Zombie zombie = (Zombie) location.getWorld().spawnEntity(location, EntityType.ZOMBIE);
             zombie.setCustomName("Dungeon Guard");
         }
-        Bukkit.getLogger().info("Spawned enemies at: " + location);
+        Bukkit.getLogger().info("Spawned " + numEnemies + " enemies at: " + location);
     }
 }
