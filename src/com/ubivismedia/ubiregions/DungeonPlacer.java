@@ -5,12 +5,7 @@ import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.World;
 import org.bukkit.block.Block;
-import org.bukkit.entity.EntityType;
-import org.bukkit.entity.Zombie;
-import org.bukkit.entity.Skeleton;
-import org.bukkit.entity.Pillager;
-import org.bukkit.entity.Vindicator;
-import org.bukkit.entity.Evoker;
+import org.bukkit.entity.*;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
 import java.util.Random;
@@ -145,17 +140,17 @@ public class DungeonPlacer {
         switch (biomeName.toUpperCase()) {
             case "MOUNTAINS":
             case "HILLS":
-                numEnemies = random.nextInt(5) + 6; // 6 bis 10 Gegner
+                numEnemies = random.nextInt(5) + 6;
                 enemies = depth > 10 ? new EntityType[]{EntityType.VINDICATOR, EntityType.EVOKER} : new EntityType[]{EntityType.PILLAGER, EntityType.ZOMBIE};
                 break;
             case "JUNGLE":
             case "TAIGA":
-                numEnemies = random.nextInt(4) + 5; // 5 bis 8 Gegner
+                numEnemies = random.nextInt(4) + 5;
                 enemies = depth > 8 ? new EntityType[]{EntityType.PILLAGER, EntityType.SKELETON} : new EntityType[]{EntityType.ZOMBIE, EntityType.SPIDER};
                 break;
             case "DESERT":
             case "PLAINS":
-                numEnemies = random.nextInt(3) + 3; // 3 bis 5 Gegner
+                numEnemies = random.nextInt(3) + 3;
                 enemies = depth > 6 ? new EntityType[]{EntityType.HUSK, EntityType.SKELETON} : new EntityType[]{EntityType.ZOMBIE, EntityType.SPIDER};
                 break;
             default:
@@ -168,5 +163,71 @@ public class DungeonPlacer {
             location.getWorld().spawnEntity(location, enemyType).setCustomName("Dungeon Guard");
         }
         Bukkit.getLogger().info("Spawned " + numEnemies + " enemies at: " + location);
+    }
+
+        private void placeTraps(Location location) {
+        World world = location.getWorld();
+        if (random.nextBoolean()) {
+            world.getBlockAt(location).setType(Material.TRIPWIRE_HOOK);
+            world.getBlockAt(location.clone().add(1, 0, 0)).setType(Material.STRING);
+            world.getBlockAt(location.clone().add(-1, 0, 0)).setType(Material.STRING);
+            world.getBlockAt(location.clone().add(0, 0, 1)).setType(Material.STRING);
+            world.getBlockAt(location.clone().add(0, 0, -1)).setType(Material.STRING);
+            Bukkit.getLogger().info("Placed a tripwire trap at: " + location);
+        }
+        
+        if (random.nextBoolean()) {
+            world.getBlockAt(location).setType(Material.DISPENSER);
+            org.bukkit.block.Dispenser dispenser = (org.bukkit.block.Dispenser) world.getBlockAt(location).getState();
+            dispenser.getInventory().addItem(new ItemStack(Material.ARROW, 10));
+            Bukkit.getLogger().info("Placed an arrow trap at: " + location);
+        }
+    }
+
+    private void placeHiddenRoom(Location location) {
+        World world = location.getWorld();
+        if (random.nextInt(10) > 7) {
+            for (int dx = -2; dx <= 2; dx++) {
+                for (int dz = -2; dz <= 2; dz++) {
+                    for (int dy = -1; dy <= 2; dy++) {
+                        world.getBlockAt(location.clone().add(dx, dy, dz)).setType(Material.STONE);
+                    }
+                }
+            }
+            world.getBlockAt(location.clone().add(0, 0, -3)).setType(Material.PISTON);
+            Bukkit.getLogger().info("Hidden room created at: " + location);
+        }
+    }
+    
+    private void generateDungeon(Location startLocation, int depth, String biomeName) {
+        if (depth <= 0) return;
+        World world = startLocation.getWorld();
+        
+        for (int dx = -3; dx <= 3; dx++) {
+            for (int dz = -3; dz <= 3; dz++) {
+                for (int dy = -2; dy <= 2; dy++) {
+                    world.getBlockAt(startLocation.clone().add(dx, dy, dz)).setType(Material.STONE);
+                }
+            }
+        }
+        
+        placeTraps(startLocation.clone().add(0, -1, 0));
+        placeHiddenRoom(startLocation.clone().add(4,0,0));
+        
+        if (random.nextBoolean()) {
+            generateDungeon(startLocation.clone().add(0, -5, 0), depth - 1, biomeName);
+        }
+        if (random.nextBoolean()) {
+            generateDungeon(startLocation.clone().add(5, 0, 0), depth - 1, biomeName);
+        }
+        if (random.nextBoolean()) {
+            generateDungeon(startLocation.clone().add(-5, 0, 0), depth - 1, biomeName);
+        }
+        if (random.nextBoolean()) {
+            generateDungeon(startLocation.clone().add(0, 0, 5), depth - 1, biomeName);
+        }
+        if (random.nextBoolean()) {
+            generateDungeon(startLocation.clone().add(0, 0, -5), depth - 1, biomeName);
+        }
     }
 }
