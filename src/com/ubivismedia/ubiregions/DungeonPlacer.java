@@ -15,7 +15,7 @@ public class DungeonPlacer {
     private final Random random = new Random();
     private boolean bossRoomPlaced = false;
 
-    public void placeDungeon(World world, String biomeName) {
+    public void placeDungeon(World world, String biomeName, Location castleLocation) {
         Location entrance = findSuitableLocation(world);
         if (entrance == null) {
             Bukkit.getLogger().warning("No suitable dungeon location found in biome: " + biomeName);
@@ -26,6 +26,7 @@ public class DungeonPlacer {
         generateEntrance(entrance);
         bossRoomPlaced = false;
         generateDungeon(entrance.clone().add(0, -5, 0), dungeonDepth, biomeName);
+        placeDungeonMapInCastle(world, castleLocation, entrance);
     }
 
     private int determineDungeonSize(String biomeName) {
@@ -93,6 +94,28 @@ public class DungeonPlacer {
             }
         }
         Bukkit.getLogger().info("Dungeon entrance created at: " + location);
+    }
+
+    private void placeDungeonMapInCastle(World world, Location castleLocation, Location dungeonLocation) {
+        if (castleLocation == null) return;
+        
+        MapView map = Bukkit.createMap(world);
+        for (MapRenderer renderer : map.getRenderers()) {
+            map.removeRenderer(renderer);
+        }
+        map.setCenterX(dungeonLocation.getBlockX());
+        map.setCenterZ(dungeonLocation.getBlockZ());
+        map.setScale(MapView.Scale.CLOSEST);
+        
+        ItemStack mapItem = new ItemStack(Material.MAP);
+        mapItem.setDurability((short) map.getId());
+        
+        Block chestBlock = castleLocation.getBlock();
+        if (chestBlock.getType() == Material.CHEST) {
+            Inventory chestInventory = ((org.bukkit.block.Chest) chestBlock.getState()).getInventory();
+            chestInventory.addItem(mapItem);
+            Bukkit.getLogger().info("Placed dungeon map in castle at: " + castleLocation);
+        }
     }
 
     private void generateDungeon(Location startLocation, int depth) {
