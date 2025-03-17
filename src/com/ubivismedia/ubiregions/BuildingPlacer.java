@@ -14,6 +14,8 @@ import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.block.Block;
+import org.bukkit.block.BlockState;
+import org.bukkit.block.Chest;
 import org.bukkit.entity.EntityType;
 import org.bukkit.entity.Pillager;
 import org.bukkit.inventory.Inventory;
@@ -56,7 +58,7 @@ public class BuildingPlacer {
 
         loadSchematic(chosenSchematic, location);
         saveCastleToDatabase(regionId, location);
-        spawnEnemiesAndLoot(location);
+        spawnEnemiesAndLoot(location, chosenSchematic);
     }
 
     private Location findFlatArea(org.bukkit.World world, int x, int z) {
@@ -116,19 +118,39 @@ public class BuildingPlacer {
         }
     }
 
-    private void spawnEnemiesAndLoot(Location location) {
+    private void spawnEnemiesAndLoot(Location location, File schematic) {
         for (int i = 0; i < 3; i++) {
             Pillager pillager = (Pillager) location.getWorld().spawnEntity(location, EntityType.PILLAGER);
             pillager.setCustomName("Raider");
         }
 
-        Location chestLocation = location.clone().add(2, 0, 2);
-        Block chestBlock = chestLocation.getBlock();
-        chestBlock.setType(Material.CHEST);
+        Location chestLocation = findHighestWalkableBlock(location);
+        if (chestLocation != null) {
+            Block chestBlock = chestLocation.getBlock();
+            chestBlock.setType(Material.CHEST);
+            
+            BlockState state = chestBlock.getState();
+            if (state instanceof Chest) {
+                Inventory chestInventory = ((Chest) state).getInventory();
+                chestInventory.addItem(new ItemStack(Material.DIAMOND, 2));
+                chestInventory.addItem(new ItemStack(Material.GOLD_INGOT, 4));
+                chestInventory.addItem(new ItemStack(Material.IRON_SWORD, 1));
+            }
+        }
+    }
+
+    private Location findHighestWalkableBlock(Location location) {
+        org.bukkit.World world = location.getWorld();
+        int startX = location.getBlockX();
+        int startZ = location.getBlockZ();
         
-        Inventory chestInventory = ((org.bukkit.block.Chest) chestBlock.getState()).getInventory();
-        chestInventory.addItem(new ItemStack(Material.DIAMOND, 2));
-        chestInventory.addItem(new ItemStack(Material.GOLD_INGOT, 4));
-        chestInventory.addItem(new ItemStack(Material.IRON_SWORD, 1));
+        int highestY = world.getHighestBlockYAt(startX, startZ);
+        for (int y = highestY; y > 50; y--) {
+            Block block = world.getBlockAt(startX, y, startZ);
+            if (block.getType().isSolid() && world.getBlockAt(startX, y + 1, startZ).getType() == Material.AIR) {
+                return new Location(world, startX, y + 1, startZ);
+            }
+        }
+        return null;
     }
 }
