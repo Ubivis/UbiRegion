@@ -25,11 +25,13 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.util.*;
+import java.util.concurrent.ExecutorService;
 
 public class BuildingPlacer {
     private final DatabaseManager databaseManager;
     private final Random random = new Random();
     private final DungeonPlacer dungeonPlacer;
+    private final ExecutorService executorService;
     private static final Map<String, List<ItemStack>> biomeLoot = new HashMap<>();
 
     static {
@@ -41,36 +43,38 @@ public class BuildingPlacer {
         biomeLoot.put("MOUNTAINS", Arrays.asList(new ItemStack(Material.IRON_PICKAXE, 1), new ItemStack(Material.COBBLESTONE, 20), new ItemStack(Material.LAPIS_LAZULI, 3), new ItemStack(Material.EMERALD, 2)));
     }
     
-    public BuildingPlacer(DatabaseManager databaseManager, DungeonPlacer dungeonPlacer) {
+    public BuildingPlacer(DatabaseManager databaseManager, DungeonPlacer dungeonPlacer, ExecutorService executorService) {
         this.databaseManager = databaseManager;
         this.dungeonPlacer = dungeonPlacer;
+        this.executorService = executorService;
     }
 
     public void placeBuilding(int regionId, org.bukkit.World world, String biomeName, int x, int z) {
-        File schematicDir = new File("plugins/UbiRegions/resources/buildings/" + biomeName);
-        if (!schematicDir.exists() || !schematicDir.isDirectory()) {
-            Bukkit.getLogger().warning("No schematics found for biome: " + biomeName);
-            return;
-        }
+        executorService.execute(() -> {
+            File schematicDir = new File("plugins/UbiRegions/resources/buildings/" + biomeName);
+            if (!schematicDir.exists() || !schematicDir.isDirectory()) {
+                Bukkit.getLogger().warning("No schematics found for biome: " + biomeName);
+                return;
+            }
 
-        File[] files = schematicDir.listFiles((dir, name) -> name.endsWith(".schem"));
-        if (files == null || files.length == 0) {
-            Bukkit.getLogger().warning("No schematic files available for biome: " + biomeName);
-            return;
-        }
+            File[] files = schematicDir.listFiles((dir, name) -> name.endsWith(".schem"));
+            if (files == null || files.length == 0) {
+                Bukkit.getLogger().warning("No schematic files available for biome: " + biomeName);
+                return;
+            }
 
-        File chosenSchematic = files[random.nextInt(files.length)];
-        Location location = findAdjustedFlatArea(world, x, z);
-        if (location == null) {
-            Bukkit.getLogger().warning("No valid flat location found in region " + regionId);
-            return;
-        }
+            File chosenSchematic = files[random.nextInt(files.length)];
+            Location location = new Location(world, x, world.getHighestBlockYAt(x, z) + 1, z);
+            
+            loadSchematic(chosenSchematic, location);
+            saveCastleToDatabase(regionId, location);
 
-        loadSchematic(chosenSchematic, location);
-        saveCastleToDatabase(regionId, location);
-        spawnEnemiesAndLoot(location, chosenSchematic, biomeName);
-        placeSecretRoom(location);
-        dungeonPlacer.placeDungeon(world, biomeName, location);
+            executorService.execute(() -> {
+                spawnEnemiesAndLoot(location, biomeName);
+                placeSecretRoom(location);
+                dungeonPlacer.placeDungeon(world, biomeName, location);
+            });
+        });
     }
 
     private Location findAdjustedFlatArea(org.bukkit.World world, int x, int z) {
