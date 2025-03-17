@@ -6,6 +6,8 @@ import com.sk89q.worldedit.extent.clipboard.Clipboard;
 import com.sk89q.worldedit.extent.clipboard.io.ClipboardFormat;
 import com.sk89q.worldedit.extent.clipboard.io.ClipboardReader;
 import com.sk89q.worldedit.function.operation.Operations;
+import com.sk89q.worldedit.math.transform.AffineTransform;
+import com.sk89q.worldedit.math.transform.Transform;
 import com.sk89q.worldedit.session.ClipboardHolder;
 import com.sk89q.worldedit.world.World;
 import org.bukkit.Bukkit;
@@ -80,13 +82,18 @@ public class BuildingPlacer {
             World weWorld = BukkitAdapter.adapt(location.getWorld());
             
             com.sk89q.worldedit.EditSession editSession = FaweAPI.getEditSessionBuilder(weWorld).build();
-            Operations.complete(new ClipboardHolder(clipboard).createPaste(editSession)
+            
+            // Zufällige Rotation um 0°, 90°, 180° oder 270°
+            int rotationAngle = random.nextInt(4) * 90;
+            Transform transform = new AffineTransform().rotateY(rotationAngle);
+            
+            Operations.complete(new ClipboardHolder(clipboard).setTransform(transform).createPaste(editSession)
                     .to(BukkitAdapter.asBlockVector(location))
                     .ignoreAirBlocks(true)
                     .build());
             editSession.flushQueue();
 
-            Bukkit.getLogger().info("Loaded schematic " + schematic.getName() + " at " + location);
+            Bukkit.getLogger().info("Loaded schematic " + schematic.getName() + " at " + location + " with rotation: " + rotationAngle + "°");
         } catch (Exception e) {
             e.printStackTrace();
         }
