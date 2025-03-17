@@ -185,6 +185,22 @@ public class DungeonPlacer {
         }
     }
 
+    private void placeLootChest(Location location, boolean rareLoot) {
+        location.getBlock().setType(Material.CHEST);
+        Inventory chestInventory = ((org.bukkit.block.Chest) location.getBlock().getState()).getInventory();
+        
+        if (rareLoot) {
+            chestInventory.addItem(new ItemStack(Material.DIAMOND, 2));
+            chestInventory.addItem(new ItemStack(Material.GOLDEN_APPLE, 1));
+            chestInventory.addItem(new ItemStack(Material.ENCHANTED_BOOK, 1));
+        } else {
+            chestInventory.addItem(new ItemStack(Material.IRON_INGOT, 5));
+            chestInventory.addItem(new ItemStack(Material.BREAD, 3));
+            chestInventory.addItem(new ItemStack(Material.ARROW, 10));
+        }
+        Bukkit.getLogger().info("Placed " + (rareLoot ? "RARE" : "COMMON") + " loot chest at: " + location);
+    }    
+
     private void placeHiddenRoom(Location location) {
         World world = location.getWorld();
         if (random.nextInt(10) > 7) {
@@ -196,6 +212,7 @@ public class DungeonPlacer {
                 }
             }
             world.getBlockAt(location.clone().add(0, 0, -3)).setType(Material.PISTON);
+            placeLootChest(location.clone().add(1, 0, 0), true);
             Bukkit.getLogger().info("Hidden room created at: " + location);
         }
     }
