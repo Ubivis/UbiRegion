@@ -25,8 +25,25 @@ public class DungeonPlacer {
             return;
         }
 
+        int dungeonDepth = determineDungeonSize(biomeName);
         generateEntrance(entrance);
-        generateDungeon(entrance.clone().add(0, -5, 0), 10);
+        generateDungeon(entrance.clone().add(0, -5, 0), dungeonDepth);
+    }
+
+    private int determineDungeonSize(String biomeName) {
+        switch (biomeName.toUpperCase()) {
+            case "MOUNTAINS":
+            case "HILLS":
+                return 15 + random.nextInt(10);
+            case "DESERT":
+            case "PLAINS":
+                return 8 + random.nextInt(5);
+            case "JUNGLE":
+            case "TAIGA":
+                return 12 + random.nextInt(7);
+            default:
+                return 10;
+        }
     }
 
     private Location findSuitableLocation(World world) {
