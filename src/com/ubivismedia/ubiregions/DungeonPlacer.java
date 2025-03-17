@@ -303,14 +303,15 @@ public class DungeonPlacer {
         }
     }
 
-    private void saveDungeonToDatabase(Location location) {
+    private void saveDungeonToDatabase(int regionId, Location location) {
         executorService.execute(() -> {
             try (Connection conn = databaseManager.getConnection();
                  PreparedStatement stmt = conn.prepareStatement(
-                         "INSERT INTO dungeons (x, y, z) VALUES (?, ?, ?)")) {
-                stmt.setInt(1, location.getBlockX());
-                stmt.setInt(2, location.getBlockY());
-                stmt.setInt(3, location.getBlockZ());
+                         "INSERT INTO dungeons (region_id, entrance_x, entrance_y, entrance_z) VALUES (?, ?, ?, ?)")) {
+                stmt.setInt(1, regionId);
+                stmt.setInt(2, location.getBlockX());
+                stmt.setInt(3, location.getBlockY());
+                stmt.setInt(4, location.getBlockZ());
                 stmt.executeUpdate();
             } catch (SQLException e) {
                 e.printStackTrace();
