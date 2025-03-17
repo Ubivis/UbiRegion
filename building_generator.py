@@ -6,17 +6,17 @@ from nbt import NBTFile, TAG_Compound, TAG_Int, TAG_List, TAG_String
 def get_materials_for_biome(biome):
     """Returns a dictionary of materials based on biome type."""
     biome_materials = {
-        "DESERT": {"wall": "minecraft:sandstone", "floor": "minecraft:smooth_sandstone", "roof": "minecraft:cut_sandstone", "fence": "minecraft:sandstone_wall"},
-        "PLAINS": {"wall": "minecraft:stone_bricks", "floor": "minecraft:oak_planks", "roof": "minecraft:dark_oak_planks", "fence": "minecraft:cobblestone_wall"},
-        "TAIGA": {"wall": "minecraft:spruce_log", "floor": "minecraft:spruce_planks", "roof": "minecraft:spruce_planks", "fence": "minecraft:spruce_fence"},
-        "JUNGLE": {"wall": "minecraft:jungle_log", "floor": "minecraft:jungle_planks", "roof": "minecraft:jungle_planks", "fence": "minecraft:jungle_fence"},
-        "SAVANNA": {"wall": "minecraft:acacia_log", "floor": "minecraft:acacia_planks", "roof": "minecraft:acacia_planks", "fence": "minecraft:acacia_fence"},
-        "MOUNTAINS": {"wall": "minecraft:cobbled_deepslate", "floor": "minecraft:stone_bricks", "roof": "minecraft:polished_deepslate", "fence": "minecraft:stone_brick_wall"},
+        "DESERT": {"wall": "minecraft:sandstone", "floor": "minecraft:smooth_sandstone", "roof": "minecraft:cut_sandstone", "fence": "minecraft:sandstone_wall", "banner": "minecraft:yellow_banner", "torch": "minecraft:soul_torch"},
+        "PLAINS": {"wall": "minecraft:stone_bricks", "floor": "minecraft:oak_planks", "roof": "minecraft:dark_oak_planks", "fence": "minecraft:cobblestone_wall", "banner": "minecraft:white_banner", "torch": "minecraft:torch"},
+        "TAIGA": {"wall": "minecraft:spruce_log", "floor": "minecraft:spruce_planks", "roof": "minecraft:spruce_planks", "fence": "minecraft:spruce_fence", "banner": "minecraft:blue_banner", "torch": "minecraft:torch"},
+        "JUNGLE": {"wall": "minecraft:jungle_log", "floor": "minecraft:jungle_planks", "roof": "minecraft:jungle_planks", "fence": "minecraft:jungle_fence", "banner": "minecraft:green_banner", "torch": "minecraft:lantern"},
+        "SAVANNA": {"wall": "minecraft:acacia_log", "floor": "minecraft:acacia_planks", "roof": "minecraft:acacia_planks", "fence": "minecraft:acacia_fence", "banner": "minecraft:orange_banner", "torch": "minecraft:torch"},
+        "MOUNTAINS": {"wall": "minecraft:cobbled_deepslate", "floor": "minecraft:stone_bricks", "roof": "minecraft:polished_deepslate", "fence": "minecraft:stone_brick_wall", "banner": "minecraft:black_banner", "torch": "minecraft:lantern"},
     }
     return biome_materials.get(biome.upper(), biome_materials["PLAINS"])
 
 def create_tower_schematic(biome="PLAINS", radius=5, height=20, filename="tower.schem"):
-    """Generates a biome-specific tower schematic with decorations and battlements."""
+    """Generates a biome-specific tower schematic with decorations, banners, and lighting."""
     materials = get_materials_for_biome(biome)
     tower = np.full((radius * 2 + 1, height, radius * 2 + 1), "minecraft:air")
     
@@ -54,12 +54,16 @@ def create_tower_schematic(biome="PLAINS", radius=5, height=20, filename="tower.
         tower[radius + 1, floor_heights[-1], radius] = "minecraft:bed"
         tower[radius - 1, floor_heights[-1], radius] = "minecraft:chest"
     
-    # Adding battlements at the top level
+    # Adding battlements, banners, and torches at the top level
     for x in range(-radius, radius + 1):
         for z in range(-radius, radius + 1):
             if x**2 + z**2 >= (radius - 1)**2 and x**2 + z**2 <= radius**2:
                 if (x + z) % 2 == 0:
                     tower[x + radius, height - 1, z + radius] = materials["fence"]
+                if (x + z) % 4 == 0:
+                    tower[x + radius, height, z + radius] = materials["banner"]
+                if (x + z) % 6 == 0:
+                    tower[x + radius, height - 2, z + radius] = materials["torch"]
     
     schem_nbt = NBTFile()
     root = TAG_Compound()
