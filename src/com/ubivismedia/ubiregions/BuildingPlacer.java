@@ -31,6 +31,7 @@ import java.util.*;
 public class BuildingPlacer {
     private final DatabaseManager databaseManager;
     private final Random random = new Random();
+    private final DungeonPlacer dungeonPlacer;
     private static final Map<String, List<ItemStack>> biomeLoot = new HashMap<>();
 
     static {
@@ -42,8 +43,9 @@ public class BuildingPlacer {
         biomeLoot.put("MOUNTAINS", Arrays.asList(new ItemStack(Material.IRON_PICKAXE, 1), new ItemStack(Material.COBBLESTONE, 20), new ItemStack(Material.LAPIS_LAZULI, 3), new ItemStack(Material.EMERALD, 2)));
     }
     
-    public BuildingPlacer(DatabaseManager databaseManager) {
+    public BuildingPlacer(DatabaseManager databaseManager, DungeonPlacer dungeonPlacer) {
         this.databaseManager = databaseManager;
+        this.dungeonPlacer = dungeonPlacer;
     }
 
     public void placeBuilding(int regionId, org.bukkit.World world, String biomeName, int x, int z) {
@@ -69,6 +71,7 @@ public class BuildingPlacer {
         loadSchematic(chosenSchematic, location);
         saveCastleToDatabase(regionId, location);
         spawnEnemiesAndLoot(location, chosenSchematic, biomeName);
+        dungeonPlacer.placeDungeon(world, biomeName, location);
     }
 
     private Location findFlatArea(org.bukkit.World world, int x, int z) {
@@ -129,7 +132,7 @@ public class BuildingPlacer {
     }
 
     private void spawnEnemiesAndLoot(Location location, File schematic, String biomeName) {
-        int numPillagers = random.nextInt(3) + 2; // Spawne 2 bis 4 Pillager
+        int numPillagers = random.nextInt(3) + 2;
         for (int i = 0; i < numPillagers; i++) {
             Pillager pillager = (Pillager) location.getWorld().spawnEntity(location, EntityType.PILLAGER);
             pillager.setCustomName("Raider");
@@ -161,7 +164,7 @@ public class BuildingPlacer {
             for (int dz = -searchRadius; dz <= searchRadius; dz++) {
                 int y = world.getHighestBlockYAt(x + dx, z + dz);
                 if (Math.abs(y - baseY) > 3) {
-                    baseY = Math.min(baseY, y); // Terrain leicht anpassen
+                    baseY = Math.min(baseY, y);
                 }
             }
         }
