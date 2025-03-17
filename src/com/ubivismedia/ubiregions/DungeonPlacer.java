@@ -7,6 +7,10 @@ import org.bukkit.World;
 import org.bukkit.block.Block;
 import org.bukkit.entity.EntityType;
 import org.bukkit.entity.Zombie;
+import org.bukkit.entity.Skeleton;
+import org.bukkit.entity.Pillager;
+import org.bukkit.entity.Vindicator;
+import org.bukkit.entity.Evoker;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
 import java.util.Random;
@@ -103,12 +107,9 @@ public class DungeonPlacer {
         if (random.nextBoolean()) {
             generateDungeon(startLocation.clone().add(0, 0, -5), depth - 1);
         }
-        if (random.nextBoolean()) {
-            generateDungeon(startLocation.clone().add(0, 5, 0), depth - 1);
-        }
         
         placeLootChest(startLocation.clone().add(0, -depth, 0));
-        spawnEnemies(startLocation);
+        spawnEnemies(startLocation, depth);
     }
 
     private void placeLootChest(Location location) {
@@ -120,11 +121,12 @@ public class DungeonPlacer {
         Bukkit.getLogger().info("Placed loot chest at: " + location);
     }
 
-    private void spawnEnemies(Location location) {
+    private void spawnEnemies(Location location, int depth) {
         int numEnemies = random.nextInt(3) + 2;
+        EntityType[] enemies = depth > 5 ? new EntityType[]{EntityType.PILLAGER, EntityType.VINDICATOR, EntityType.EVOKER} : new EntityType[]{EntityType.ZOMBIE, EntityType.SKELETON};
         for (int i = 0; i < numEnemies; i++) {
-            Zombie zombie = (Zombie) location.getWorld().spawnEntity(location, EntityType.ZOMBIE);
-            zombie.setCustomName("Dungeon Guard");
+            EntityType enemyType = enemies[random.nextInt(enemies.length)];
+            location.getWorld().spawnEntity(location, enemyType).setCustomName("Dungeon Guard");
         }
         Bukkit.getLogger().info("Spawned " + numEnemies + " enemies at: " + location);
     }
