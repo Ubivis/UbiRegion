@@ -1,6 +1,7 @@
 import random
 import numpy as np
 import nbt
+import argparse
 from nbt import NBTFile, TAG_Compound, TAG_Int, TAG_List, TAG_String
 
 def get_materials_for_biome(biome):
@@ -212,7 +213,7 @@ def create_castle_schematic(biome, size, floors, rooms, filename):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Generate a Minecraft schematic for a Tower or Castle.")
     parser.add_argument("structure_type", choices=["TOWER", "CASTLE"], help="Type of structure to generate")
-    parser.add_argument("biome", help="Biome in which the structure is placed")
+    parser.add_argument("biome", choices=list(get_materials_for_biome().keys()), help="Biome in which the structure is placed")
     parser.add_argument("size", type=int, help="Size of the structure (radius for towers, width for castles)")
     parser.add_argument("floors", type=int, help="Number of floors in the structure")
     parser.add_argument("rooms", type=int, nargs='?', default=4, help="Number of rooms per floor (only for castles)")
