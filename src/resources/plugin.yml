@@ -1,0 +1,16 @@
+name: UbiRegions
+main: com.ubivismedia.ubiregions.UbiRegions
+version: 1.0.0
+author: Ubivismedia
+description: "Automatically places buildings and dungeons in suitable locations."
+api-version: 1.20
+depend:
+  - FastAsyncWorldEdit
+  - WorldEdit
+softdepend:
+  - Vault
+  - MythicMobs
+permissions:
+  ubiregions.admin:
+    description: "Allows administrative actions in UbiRegions."
+    default: op
